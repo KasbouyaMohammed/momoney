@@ -123,9 +123,9 @@ function R(){
   S.b=S.b||{};
   const now=new Date(),dv=V.getFullYear()*12+V.getMonth(),dn=now.getFullYear()*12+now.getMonth();
   const p=dv<dn?1:dv>dn?0:now.getDate()/new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  // 12 cells = budget, tick = how far into the month; 1 = ahead of pace, 2 = past budget
+  // 12 cells = budget, tick = how far into the month; fox < 50% ≤ owl < 80% ≤ witch
   const tk=p>0&&p<1?`<u style="left:${p*100}%"></u>`:'';
-  const lvl=r=>r>1?2:r>=.5&&r>p+.1?1:0;
+  const lvl=r=>r>=.8?2:r>=.5?1:0;
   const bar=(r,cls,tick)=>{const n=Math.max(r?1:0,Math.round(Math.min(r,1)*12));return`<span class="m${cls}">${'<i class="f"></i>'.repeat(n)+'<i></i>'.repeat(12-n)}${tick}</span>`};
   const by={};L.forEach(x=>by[x.c]=(by[x.c]||0)+x.a);
   Object.keys(S.b).forEach(c=>by[c]=by[c]||0);
