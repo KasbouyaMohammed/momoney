@@ -23,7 +23,7 @@ body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#1d3a2
 .top{display:flex;justify-content:space-between;align-items:center;font-size:24px}
 .lcd button{background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0 4px}
 .hero{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
-#pet{width:56px;height:56px;flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
+#pet{width:54px;flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
 #pet .w{fill:var(--wine)}
 #say{font-size:20px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #cats .sal{padding-bottom:4px;margin-bottom:4px;border-bottom:1px dashed #22301a55}
@@ -106,10 +106,11 @@ const h=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const today=()=>{const t=new Date();return`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()};
 
+const PAL={1:'#22301a',2:'#7b1e2e',o:'#d9772b',w:'#f4ecd8',b:'#7a5230',t:'#c9a77a',y:'#e8b030',p:'#6b3fa0',q:'#45266b',s:'#f0d9b5',h:'#4a2d5e'};
 const PET=[ // fox: happy, owl: cautious, witch: mad
- ['1..........1','11........11','1.1......1.1','1..111111..1','1..........1','1..1....1..1','1.1.1..1.1.1','11........11','.1........1.','..11....11..','....1..1....','.....11.....'],
- ['.1........1.','.11......11.','.1.111111.1.','1..........1','1.111..111.1','1.1.1..1.1.1','1.111..111.1','1....11....1','.1...11...1.','.1........1.','..11.11.11..'],
- ['.....11.....','....1..1....','...1....1...','..22222222..','111111111111','.1........1.','.11......11.','.1.1....1.1.','.1.2....2.1.','.1........1.','.1..1111..1.','.1.1....1.1.','..11111111..']];
+ ['1..........1','11........11','1o1......1o1','1oo111111oo1','1oooooooooo1','1oo1oooo1oo1','1o1o1oo1o1o1','11wwooooww11','.1wwwoowww1.','..11wwww11..','....1ww1....','.....11.....'],
+ ['.1........1.','.11......11.','.1b111111b1.','1bbbbbbbbbb1','1byyybbyyyb1','1by1ybby1yb1','1byyybbyyyb1','1btttyytttb1','.1tttttttt1.','.1tbttbttb1.','..11y11y11..'],
+ ['.....qq.....','....1pp1....','...1pppp1...','..qqqyyqqq..','pppppppppppp','h1ssssssss1h','h11ssssss11h','h1s1ssss1s1h','h1s2ssss2s1h','h1ssssssss1h','h1sss11sss1h','h1ss1ss1ss1h','h1ssssssss1h','hh11111111hh','.pppqqqqppp.','pppppppppppp']];
 
 function cats(sel){$('#cat').innerHTML=S.c.map(c=>`<option>${h(c)}</option>`).join('')+'<option value="+">+ new</option>';if(sel)$('#cat').value=sel}
 
@@ -136,7 +137,8 @@ function R(){
     return `<div data-c="${h(c)}"><span>${h(c)}</span>${bar(r,(b?'':' nb')+(l>1?' over':''),b&&l<2?tk:'')}<span>${f(v)}</span></div>`;
   }).join('');
   $('#pet').setAttribute('viewBox',`0 0 12 ${PET[ws].length}`);
-  $('#pet').innerHTML=PET[ws].flatMap((row,y)=>[...row].map((ch,x)=>ch==='.'?'':`<rect x="${x}" y="${y}" width="1" height="1"${ch==='2'?' class="w"':''}/>`)).join('');
+  $('#pet').style.height=PET[ws].length*4.5+'px';
+  $('#pet').innerHTML=PET[ws].flatMap((row,y)=>[...row].map((ch,x)=>ch==='.'?'':`<rect x="${x}" y="${y}" width="1" height="1" fill="${PAL[ch]}"/>`)).join('');
   $('.lcd').className='lcd s'+ws;
   $('#say').textContent=worst;
   $('#list').innerHTML=L.map(x=>`<li data-id="${x.id}"${x.id===edit?' class="ed"':''}><span>${x.d.slice(8)}</span><span>${h(x.c)}</span><span>${h(x.n)}</span><b>${f(x.a)}</b><button data-del>×</button></li>`).join('')||'<li class="none">—</li>';
