@@ -23,19 +23,22 @@ body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#1d3a2
 .top{display:flex;justify-content:space-between;align-items:center;font-size:24px}
 .lcd button{background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0 4px}
 .hero{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
-#pet{width:56px;height:42px;flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
+#pet{width:56px;height:56px;flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
 #pet .w{fill:var(--wine)}
 #say{font-size:20px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #cats .sal{padding-bottom:4px;margin-bottom:4px;border-bottom:1px dashed #22301a55}
 .s0 #pet{animation:hop 1.4s steps(1) infinite}
+.s1 #pet{animation:lk 2.4s steps(1) infinite}
 .s2 #pet{animation:sh .5s steps(1) infinite}
+@keyframes lk{33%{transform:translateX(-2px)}66%{transform:translateX(2px)}}
 .s2 #say{color:var(--wine);animation:bl 1s steps(1) infinite}
 @keyframes hop{50%{transform:translateY(-3px)}}
 @keyframes sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 @keyframes bl{50%{opacity:0}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 #tot{font-size:clamp(40px,12vw,56px);line-height:1;margin-left:auto}
-#cats div{display:grid;grid-template-columns:80px 1fr auto;gap:8px;align-items:center;font-size:19px;line-height:1.2;cursor:pointer}
+#cats{display:grid;grid-template-columns:80px 1fr auto;column-gap:8px}
+#cats div{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center;font-size:19px;line-height:1.2;cursor:pointer}
 #cats span{overflow:hidden;white-space:nowrap}
 .m{position:relative;display:grid;grid-template-columns:repeat(12,1fr);gap:1px;height:10px}
 .m i{background:#22301a26}
@@ -103,10 +106,10 @@ const h=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const today=()=>{const t=new Date();return`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()};
 
-const PET=[ // frog: calm, uneasy, alarmed
- ['.11......11.','1..1....1..1','1.11....11.1','.1........1.','1..........1','1.1......1.1','1..111111..1','.1........1.','..11111111..'],
- ['.11......11.','1..1....1..1','1..11...1.11','.1........1.','1..........1','1..........1','1..111111..1','.1........1.','..11111111..'],
- ['.11......11.','1..1....1..1','1.11....11.1','.1........1.','1....22....1','1...2..2...1','1...2..2...1','.1...22...1.','..11111111..']];
+const PET=[ // fox: happy, owl: cautious, witch: mad
+ ['1..........1','11........11','1.1......1.1','1..111111..1','1..........1','1..1....1..1','1.1.1..1.1.1','11........11','.1........1.','..11....11..','....1..1....','.....11.....'],
+ ['.1........1.','.11......11.','.1.111111.1.','1..........1','1.111..111.1','1.1.1..1.1.1','1.111..111.1','1....11....1','.1...11...1.','.1........1.','..11.11.11..'],
+ ['.....11.....','....1..1....','...1....1...','..22222222..','111111111111','.1........1.','.11......11.','.1.1....1.1.','.1.2....2.1.','.1........1.','.1..1111..1.','.1.1....1.1.','..11111111..']];
 
 function cats(sel){$('#cat').innerHTML=S.c.map(c=>`<option>${h(c)}</option>`).join('')+'<option value="+">+ new</option>';if(sel)$('#cat').value=sel}
 
@@ -127,11 +130,12 @@ function R(){
   Object.keys(S.b).forEach(c=>by[c]=by[c]||0);
   const T=Object.entries(by).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...T.map(t=>t[1]));
   let ws=S.s?lvl(t/S.s):0,worst=ws?(ws>1?'!':'~'):'';
-  $('#cats').innerHTML=(S.s?`<div data-s class="sal"><span>Left</span>${bar(t/S.s,ws>1?' over':'',tk)}<span>${f(S.s-t)}</span></div>`:`<div data-s class="sal"><span>Salary</span>${bar(0,'','')}<span>—</span></div>`)+T.map(([c,v])=>{
+  $('#cats').innerHTML=(S.s?`<div data-s class="sal"><span>Left</span>${bar(t/S.s,ws>1?' over':'',ws>1?'':tk)}<span>${f(S.s-t)}</span></div>`:`<div data-s class="sal"><span>Salary</span>${bar(0,'','')}<span>—</span></div>`)+T.map(([c,v])=>{
     const b=S.b[c],r=b?v/b:v/mx,l=b?lvl(r):0;
     if(l>ws){ws=l;worst=c+(l>1?' !':' ~')}
-    return `<div data-c="${h(c)}"><span>${h(c)}</span>${bar(r,(b?'':' nb')+(l>1?' over':''),b?tk:'')}<span>${f(v)}</span></div>`;
+    return `<div data-c="${h(c)}"><span>${h(c)}</span>${bar(r,(b?'':' nb')+(l>1?' over':''),b&&l<2?tk:'')}<span>${f(v)}</span></div>`;
   }).join('');
+  $('#pet').setAttribute('viewBox',`0 0 12 ${PET[ws].length}`);
   $('#pet').innerHTML=PET[ws].flatMap((row,y)=>[...row].map((ch,x)=>ch==='.'?'':`<rect x="${x}" y="${y}" width="1" height="1"${ch==='2'?' class="w"':''}/>`)).join('');
   $('.lcd').className='lcd s'+ws;
   $('#say').textContent=worst;
