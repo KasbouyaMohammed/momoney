@@ -25,7 +25,8 @@ body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#1d3a2
 .hero{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
 #pet{width:56px;height:42px;flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
 #pet .w{fill:var(--wine)}
-#say{font-size:20px;white-space:nowrap}
+#say{font-size:20px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#cats .sal{padding-bottom:4px;margin-bottom:4px;border-bottom:1px dashed #22301a55}
 .s0 #pet{animation:hop 1.4s steps(1) infinite}
 .s2 #pet{animation:sh .5s steps(1) infinite}
 .s2 #say{color:var(--wine);animation:bl 1s steps(1) infinite}
@@ -113,23 +114,27 @@ function R(){
   const ym=`${V.getFullYear()}-${pad(V.getMonth()+1)}`;
   $('#mon').textContent=V.toLocaleString('en',{month:'short',year:'numeric'}).toUpperCase();
   const L=S.e.filter(x=>x.d.startsWith(ym)).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id);
-  $('#tot').textContent=f(L.reduce((s,x)=>s+x.a,0));
+  const t=L.reduce((s,x)=>s+x.a,0);
+  $('#tot').textContent=f(t);
   S.b=S.b||{};
   const now=new Date(),dv=V.getFullYear()*12+V.getMonth(),dn=now.getFullYear()*12+now.getMonth();
   const p=dv<dn?1:dv>dn?0:now.getDate()/new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  // 12 cells = budget, tick = how far into the month; 1 = ahead of pace, 2 = past budget
+  const tk=p>0&&p<1?`<u style="left:${p*100}%"></u>`:'';
+  const lvl=r=>r>1?2:r>=.5&&r>p+.1?1:0;
+  const bar=(r,cls,tick)=>{const n=Math.max(r?1:0,Math.round(Math.min(r,1)*12));return`<span class="m${cls}">${'<i class="f"></i>'.repeat(n)+'<i></i>'.repeat(12-n)}${tick}</span>`};
   const by={};L.forEach(x=>by[x.c]=(by[x.c]||0)+x.a);
   Object.keys(S.b).forEach(c=>by[c]=by[c]||0);
   const T=Object.entries(by).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...T.map(t=>t[1]));
-  let ws=0,worst='';
-  // budgeted: 12 cells = budget, tick = how far into the month; fast = ahead of pace, over = past budget
-  $('#cats').innerHTML=T.map(([c,v])=>{
-    const b=S.b[c],r=b?v/b:v/mx,st=!b?0:r>1?2:r>=.5&&r>p+.1?1:0,n=Math.max(v?1:0,Math.round(Math.min(r,1)*12));
-    if(st>ws){ws=st;worst=c}
-    return `<div data-c="${h(c)}"><span>${h(c)}</span><span class="m${b?'':' nb'}${st>1?' over':''}">${'<i class="f"></i>'.repeat(n)+'<i></i>'.repeat(12-n)}${b&&p>0&&p<1?`<u style="left:${p*100}%"></u>`:''}</span><span>${f(v)}</span></div>`;
+  let ws=S.s?lvl(t/S.s):0,worst=ws?(ws>1?'!':'~'):'';
+  $('#cats').innerHTML=(S.s?`<div data-s class="sal"><span>Left</span>${bar(t/S.s,ws>1?' over':'',tk)}<span>${f(S.s-t)}</span></div>`:`<div data-s class="sal"><span>Salary</span>${bar(0,'','')}<span>—</span></div>`)+T.map(([c,v])=>{
+    const b=S.b[c],r=b?v/b:v/mx,l=b?lvl(r):0;
+    if(l>ws){ws=l;worst=c+(l>1?' !':' ~')}
+    return `<div data-c="${h(c)}"><span>${h(c)}</span>${bar(r,(b?'':' nb')+(l>1?' over':''),b?tk:'')}<span>${f(v)}</span></div>`;
   }).join('');
   $('#pet').innerHTML=PET[ws].flatMap((row,y)=>[...row].map((ch,x)=>ch==='.'?'':`<rect x="${x}" y="${y}" width="1" height="1"${ch==='2'?' class="w"':''}/>`)).join('');
   $('.lcd').className='lcd s'+ws;
-  $('#say').textContent=worst?worst+(ws>1?' !':' ~'):'';
+  $('#say').textContent=worst;
   $('#list').innerHTML=L.map(x=>`<li data-id="${x.id}"${x.id===edit?' class="ed"':''}><span>${x.d.slice(8)}</span><span>${h(x.c)}</span><span>${h(x.n)}</span><b>${f(x.a)}</b><button data-del>×</button></li>`).join('')||'<li class="none">—</li>';
   $('#cur').textContent=S.cur;
   $('#add').textContent=edit?'Save':'Add';
@@ -158,7 +163,8 @@ $('#list').onclick=e=>{
   edit=id;$('#amt').value=x.a;cats(x.c);$('#d').value=x.d;$('#note').value=x.n;R();$('#amt').focus();
 };
 $('#cats').onclick=e=>{
-  const d=e.target.closest('[data-c]');if(!d)return;
+  const d=e.target.closest('[data-c],[data-s]');if(!d)return;
+  if(d.hasAttribute('data-s')){const v=prompt('Monthly salary',S.s||'');if(v!==null){S.s=+v>0?+v:0;save();R()}return}
   const c=d.dataset.c,v=prompt(c+' budget',S.b[c]||'');if(v===null)return;
   if(+v>0)S.b[c]=+v;else delete S.b[c];save();R();
 };
