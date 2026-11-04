@@ -21,6 +21,7 @@ body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#1d3a2
 .in{padding:10px}
 .lcd{background:var(--lcd);color:var(--lcdi);font-family:VT323,monospace;border:2px inset #8a9a70;border-radius:4px;padding:6px 12px 10px;box-shadow:inset 0 0 14px #0003}
 .top{display:flex;justify-content:space-between;align-items:center;font-size:24px}
+#mon{cursor:pointer}
 .lcd button{background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0 4px}
 .hero{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
 #pet{flex:none;shape-rendering:crispEdges;fill:var(--lcdi)}
@@ -107,12 +108,13 @@ const h=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const today=()=>{const t=new Date();return`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 const ds=t=>`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`,dd=s=>new Date(s+'T12:00');
 const addm=(s,n)=>{const t=dd(s);t.setMonth(t.getMonth()+n);return ds(t)},prevday=s=>{const t=dd(s);t.setDate(t.getDate()-1);return ds(t)};
-const mstart=s=>s.slice(0,8)+'01',MON=s=>dd(s).toLocaleString('en',{month:'short'}).toUpperCase(),D=s=>+s.slice(8)+' '+MON(s);
-// period holding day v: payday → next payday; before any payday, calendar month (cut at the first payday)
+const MON=s=>dd(s).toLocaleString('en',{month:'short'}).toUpperCase(),D=s=>+s.slice(8)+' '+MON(s);
+// period holding day v: payday → next payday. Payday is S.pd (default 25) each month,
+// moved to the actual date when a Salary entry is logged within 6 days of it
 function per(v){
-  const P=[...new Set(S.e.filter(x=>x.i).map(x=>x.d))].sort(),s=P.filter(d=>d<=v).pop();
-  if(s)return{s,e:P.find(d=>d>s)||null,pay:1};
-  const m=addm(mstart(v),1),n=P.find(d=>d>v);return{s:mstart(v),e:n&&n<m?n:m,pay:0};
+  const pd=Math.min(S.pd||25,28),P=S.e.filter(x=>x.i).map(x=>x.d);
+  const B=[-2,-1,0,1,2].map(k=>{const n=addm(v.slice(0,8)+pad(pd),k);return P.find(d=>Math.abs(dd(d)-dd(n))<=6*864e5)||n}).sort();
+  return{s:B.filter(b=>b<=v).pop(),e:B.find(b=>b>v)};
 }
 const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()};
 
@@ -125,10 +127,10 @@ const PET=[ // fox: happy, owl: cautious, witch: mad
 function cats(sel){$('#cat').innerHTML=S.c.map(c=>`<option>${h(c)}</option>`).join('')+'<option value="=">Salary</option><option value="+">+ new</option>';if(sel)$('#cat').value=sel}
 
 function R(){
-  const {s,e,pay}=per(V),now=today(),pe=e||addm(s,1);
-  $('#mon').textContent=!pay&&s.endsWith('01')&&pe===addm(s,1)?MON(s)+' '+s.slice(0,4):D(s)+((e?prevday(e):now)>s?' – '+D(e?prevday(e):now):'');
-  const L=S.e.filter(x=>x.d>=s&&(!e||x.d<e)).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id),O=L.filter(x=>!x.i);
-  const t=O.reduce((s,x)=>s+x.a,0),inc=L.reduce((s,x)=>s+(x.i?x.a:0),0),sal=pay?inc:S.s;
+  const {s,e}=per(V),now=today(),pe=e;
+  $('#mon').textContent=D(s)+' – '+D(prevday(e));
+  const L=S.e.filter(x=>x.d>=s&&x.d<e).sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id),O=L.filter(x=>!x.i);
+  const t=O.reduce((s,x)=>s+x.a,0),inc=L.reduce((s,x)=>s+(x.i?x.a:0),0),sal=inc||S.s;
   $('#tot').textContent=f(t);
   S.b=S.b||{};
   const p=now>=pe?1:now<s?0:(dd(now)-dd(s))/(dd(pe)-dd(s));
@@ -184,7 +186,7 @@ function load(x){edit=x.id;$('#amt').value=x.a;cats(x.i?'=':x.c);$('#d').value=x
 $('#cats').onclick=e=>{
   const d=e.target.closest('[data-c],[data-s]');if(!d)return;
   if(d.hasAttribute('data-s')){
-    const {s,e}=per(V),x=S.e.find(y=>y.i&&y.d>=s&&(!e||y.d<e));
+    const {s,e}=per(V),x=S.e.find(y=>y.i&&y.d>=s&&y.d<e);
     if(x)return load(x);
     const v=prompt('Monthly salary',S.s||'');if(v!==null){S.s=+v>0?+v:0;save();R()}return;
   }
@@ -193,7 +195,8 @@ $('#cats').onclick=e=>{
 };
 document.onkeydown=e=>{if(e.key==='Escape'&&edit)reset()};
 $('#prev').onclick=()=>{V=prevday(per(V).s);R()};
-$('#next').onclick=()=>{const {e}=per(V);if(e){V=e;R()}};
+$('#next').onclick=()=>{V=per(V).e;R()};
+$('#mon').onclick=()=>{const v=prompt('Payday',S.pd||25);if(v!==null&&+v>=1&&+v<=31){S.pd=Math.round(+v);save();R()}};
 $('#cur').onclick=()=>{const c=prompt('Currency',S.cur);if(c){S.cur=c.trim();save();R()}};
 $('#bk').onclick=()=>dl(`momoney-${today()}.json`,JSON.stringify(S),'application/json');
 $('#csv').onclick=()=>dl(`momoney-${today()}.csv`,'date,category,note,amount\n'+S.e.map(x=>[x.d,x.c,x.n,x.a].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv');
